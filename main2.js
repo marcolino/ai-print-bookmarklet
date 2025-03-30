@@ -1,10 +1,47 @@
 javascript:(function(){
-  /* parameters */
-  const humanName = 'Human';
-  const assistantName = 'Claude';
-  const titleText = 'Claude conversation on ' + new Date().toLocaleString();
+  /* Configuration for different AI platforms */
+  const platformConfig = {
+    'claude.ai': {
+      name: 'Claude',
+      messageSelector: '[class*="message"], [role="dialog"], .message',
+      timestampSelector: '[class*="timestamp"], time, [datetime]',
+      humanClass: 'human-message, .user-message, [class*="human"], [class*="user"]'
+    },
+    'chatgpt.com': {
+      name: 'ChatGPT',
+      messageSelector: '[class*="message"], .group',
+      timestampSelector: '[class*="time"], time, [datetime]',
+      humanClass: '[class*="user"]'
+    },
+    'www.perplexity.ai': {
+      name: 'Perplexity',
+      messageSelector: '[class*="message"], [role="dialog"], .message',
+      timestampSelector: '[class*="timestamp"], time, [datetime]',
+      humanClass: '[class*="user"]'
+    },
+    'chat.deepseek.com': {
+      name: 'DeepSeek',
+      messageSelector: '[class*="message"], [role="dialog"], .message',
+      timestampSelector: '[class*="timestamp"], time, [datetime]',
+      humanClass: '[class*="user"]'
+    }
+  };
 
+  /* Detect current platform */
+  const currentDomain = window.location.hostname;
+  const platform = Object.keys(platformConfig).find(domain => currentDomain.includes(domain));
   
+  if (!platform) {
+    const supportedPlatforms = Object.keys(platformConfig).join(', ');
+    alert(`Error: Unsupported platform. Currently supported: ${supportedPlatforms}`);
+    return;
+  }
+
+  const config = platformConfig[platform];
+  const humanName = 'Human';
+  const assistantName = config.name;
+  const titleText = `${assistantName} conversation on ${new Date().toLocaleString()}`;
+
   /* Create a status indicator */
   const status = document.createElement('div');
   status.style.position = 'fixed';
@@ -15,13 +52,13 @@ javascript:(function(){
   status.style.padding = '10px';
   status.style.borderRadius = '5px';
   status.style.zIndex = '9999';
-  status.textContent = 'Preparing to print... (extracting conversation)';
+  status.textContent = `Preparing to print ${assistantName} conversation...`;
   document.body.appendChild(status);
 
   /* Function to get a clean, printable version of the conversation */
   function extractConversation() {
     /* Find all message elements */
-    const messages = Array.from(document.querySelectorAll('[class*="message"], [role="dialog"], .message'));
+    const messages = Array.from(document.querySelectorAll(config.messageSelector));
     
     /* Create a new document for printing */
     const printDoc = document.createElement('html');
@@ -31,11 +68,9 @@ javascript:(function(){
     /* Add print styles */
     style.textContent = `
       body { 
-        /*font-family: Arial, sans-serif;*/
         font-family: Courier New, serif;
         font-size: 20px;
         margin: 20px; 
-        /*line-height: 1.5;*/
         line-height: 2.5;
       }
       .header {
@@ -96,26 +131,24 @@ javascript:(function(){
     title.textContent = titleText;
     header.appendChild(title);
     
-    /*
-    const timestamp = document.createElement('div');
-    timestamp.className = 'timestamp';
-    const now = new Date();
-    timestamp.textContent = `Printed on ${now.toLocaleDateString()} at ${now.toLocaleTimeString()}`;
-    header.appendChild(timestamp);
-    */
-    
     body.appendChild(header);
     
     /* Try to find timestamps in the original messages */
-    const timestampElements = document.querySelectorAll('[class*="timestamp"], time, [datetime]');
+    const timestampElements = document.querySelectorAll(config.timestampSelector);
     const messageTimestamps = Array.from(timestampElements).map(el => el.textContent || el.getAttribute('datetime') || '');
     
     /* Process each message */
     messages.forEach((msg, index) => {
-      const isHuman = msg.classList.contains('human-message') ||
-        msg.classList.contains('user-message') ||
-        msg.classList.toString().includes('human') ||
-        msg.classList.toString().includes('user');
+      const humanClasses = config.humanClass.split(',');
+      const isHuman = humanClasses.some(cls => {
+        const trimmed = cls.trim();
+        if (trimmed.startsWith('.')) {
+          return msg.classList.contains(trimmed.slice(1));
+        } else if (trimmed.startsWith('[')) {
+          return msg.matches(trimmed);
+        }
+        return false;
+      });
       
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${isHuman ? 'human' : 'assistant'}`;
