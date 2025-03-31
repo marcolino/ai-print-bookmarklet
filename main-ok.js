@@ -122,35 +122,18 @@ javascript: (function () {
         background-color: #f9f9f9;
         border-left: 4px solid #50b97d;
       }
-      /* Fixed code block styling */
-      pre {
+      pre, code {
         white-space: pre-wrap;
         background-color: #f8f9fa;
         border: 1px solid #e1e4e8;
         padding: 12px;
         border-radius: 6px;
+        overflow-x: auto;
         font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
         font-size: 14px;
-        line-height: 1.4;
-        max-width: 100%;
-        overflow-wrap: break-word;
-        word-wrap: break-word;
-        display: block;
+      }
+      pre {
         margin: 15px 0;
-        page-break-inside: avoid;
-      }
-      code {
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-        font-size: 14px;
-        background-color: rgba(0,0,0,0.05);
-        padding: 2px 4px;
-        border-radius: 3px;
-      }
-      /* Make sure code inside pre doesn't get double-styled */
-      pre code {
-        background-color: transparent;
-        padding: -4px;
-        border-radius: 0;
       }
       @media print {
         @page {
@@ -158,10 +141,6 @@ javascript: (function () {
         }
         body {
           font-size: 14px;
-        }
-        pre, code {
-          print-color-adjust: exact;
-          -webkit-print-color-adjust: exact;
         }
       }
     `;
@@ -258,7 +237,6 @@ javascript: (function () {
         status.textContent = 'Printing...';
         printWindow.focus();
         printWindow.print();
-        
         status.textContent = 'Print dialog opened!';
         setTimeout(() => status.remove(), 2000);
       }, 500);
