@@ -1,4 +1,6 @@
 javascript: (function () {
+
+  /* Setup gllobal variables */
   const humanName = 'Human';
   const titleTextPattern = `%s conversation on ${new Date().toLocaleString()}`;
   const timeoutBeforeClosePrintWindowMilliseconds = 100;
@@ -51,27 +53,9 @@ javascript: (function () {
   }
 
   const config = platformConfig[platform];
-  /*const humanName = 'Human';*/
   const assistantName = config.name;
   const titleText = titleTextPattern.replace("%s", assistantName);
 
-  /* Create a status indicator */
-  /*
-  const status = document.createElement('div');
-  status.style.fontSize = '16px';
-  status.style.fontFamily = 'Courier new, monospace';
-  status.style.position = 'fixed';
-  status.style.top = '10px';
-  status.style.right = '10px';
-  status.style.background = 'rgba(0,0,0,0.7)';
-  status.style.color = 'yellow';
-  status.style.padding = '10px';
-  status.style.borderRadius = '5px';
-  status.style.zIndex = '9999';
-  status.textContent = `Preparing to print ${assistantName} conversation...`;
-  document.body.appendChild(status);
-  */
-  
   /* Function to clean unwanted elements */
   function cleanElements(node, selectors) {
     selectors.forEach(selector => {
@@ -221,23 +205,17 @@ javascript: (function () {
       cleanElements(contentClone, config.cleanSelectors || ['button', '[role="button"]']);
       
       /* Skip duplicated content (this can happen on ChatGPT) */
-      /*console.log("contentClone:", contentClone?.textContent);*/
-      /*console.log("contentCloneLast:", contentCloneLast?.textContent);*/
       if (contentClone?.textContent === contentCloneLast?.textContent) {
-        /*console.log("EQUAL NODE TEXT CONTENT, SKIPPING");*/
         return;
       }
-      /*console.log("NOT EQUAL NODE TEXT CONTENT");*/
 
       /* Skip empty content */
       if (!contentClone?.textContent.trim()) return;
 
       /* Skip JS spurious content */
       if (contentClone?.textContent.trim().match(/^window\.__oai_logHTML\?/)) {
-        /*console.log("SKIPPING SPURIOUS CONTENT");*/
         return;
       }
-      /*console.log("APPENDING TEXT:", contentClone?.textContent);*/
 
       /* Add the cleaned content */
       messageDiv.appendChild(contentClone);
@@ -260,14 +238,11 @@ javascript: (function () {
 
   /* Main function to prepare and print */
   function prepareAndPrint() {
-    /*status.textContent = 'Extracting conversation...';*/
-    
     try {
       /* Create the print document */
       const printDoc = extractConversation();
       
       if (!printDoc) {
-        /*status.textContent = 'No conversation found.';*/
         alert('No conversation found.');
         return;
       }
@@ -275,10 +250,6 @@ javascript: (function () {
       /* Open a new window with just the content we want to print */
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
-        /*
-        status.textContent = 'Error: Pop-up blocked. Please allow pop-ups and try again.';
-        setTimeout(() => status.remove(), 3000);
-        */
         alert('Print pop-up window blocked. Please allow pop-ups and try again.');
         return;
       }
@@ -293,37 +264,25 @@ javascript: (function () {
       setTimeout(() => {
         printWindow.print();
 
-        /*
-        status.textContent = 'Print dialog opened';
-        setTimeout(() => status.remove(), timeoutBeforeClosePrintWindowMilliseconds * 4);
-        */
-
         /* Polling mechanism to check when print dialog is closed */
         const timer = setInterval(() => {
           if (printWindow.closed) {
-            /*status.textContent = 'Print dialog closed';*/
             clearInterval(timer);
           } else {
             try {
               /* Attempt to detect if the print dialog has closed */
               if (printWindow.document.hasFocus()) {
                   clearInterval(timer);
-                  /*status.textContent = 'Print dialog closed';*/
                   printWindow.close();
               }
             } catch (e) {
               clearInterval(timer);
-              /*status.textContent = 'Print dialog closed';*/
               printWindow.close();
             }
           }
         }, timeoutBeforeClosePrintWindowMilliseconds);
       }, timeoutBeforeClosePrintWindowMilliseconds);
     } catch (err) {
-      /*
-      status.textContent = 'Error: ' + err.message;
-      setTimeout(() => status.remove(), timeoutBeforeClosePrintWindowMilliseconds * 6);
-      */
       alert('Error while printing: ' + err.message);
     }
   }

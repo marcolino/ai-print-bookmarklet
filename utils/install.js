@@ -48,7 +48,7 @@ function killFirefox() {
     if (process.platform === 'win32') {
       exec('taskkill /IM firefox.exe /F');
     } else {
-      exec('pkill -f firefox || killall firefox');
+      exec('( pkill -f firefox || killall firefox ) >/dev/null 2>&1');
     }
     //console.log('Firefox terminated.');
   } catch (err) {
@@ -75,16 +75,16 @@ async function restartFirefox() {
 // Main function
 (async () => {
   try {
-    // Step 1: Close Firefox
+    // Close Firefox
     killFirefox();
 
-    // Step 2: Get Firefox profile path
+    // Get Firefox profile path
     const dbPath = getFirefoxProfilePath();
 
-    // Step 3: get new bookmark contents
+    // Get new bookmark contents
     const bookmarkContents = fs.readFileSync(NEW_BOOKMARK_CONTENTS_FILE, { encoding: 'utf8', flag: 'r' });
 
-    // Step 4: Update bookmark
+    // Update bookmark
     const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE, (err) => {
       if (err) throw err;
 
