@@ -1,4 +1,8 @@
 javascript: (function () {
+  const humanName = 'Human';
+  const titleTextPattern = `%s conversation on ${new Date().toLocaleString()}`;
+  const timeoutBeforeClosePrintWindowMilliseconds = 100;
+
   /* Configuration for different AI platforms */
   const platformConfig = {
     'claude.ai': {
@@ -10,11 +14,12 @@ javascript: (function () {
     },
     'chatgpt.com': {
       name: 'ChatGPT',
-      messageSelector: '[class*="message"], .group',
-      timestampSelector: '[class*="time"], time, [datetime]',
-      humanClass: '[class*="user"]',
+      messageSelector: '.text-base',
+      humanClass: '.text-base:has(.whitespace-pre-wrap)',
+      assistantClass: '.text-base:has(.prose)',
       cleanSelectors: ['button', '.copy-code-button']
     },
+    /*
     'www.perplexity.ai': {
       name: 'Perplexity',
       messageSelector: 'div[data-testid="assistant-message"]',
@@ -22,14 +27,17 @@ javascript: (function () {
       humanClass: 'div[data-testid="user-message"]',
       cleanSelectors: ['button', '.copy-button']
     },
+    */
+    /*
     'chat.deepseek.com': {
       name: 'DeepSeek',
-      messageContainer: '[class*="message-container"]', /* The container for each message */
-      contentSelector: '[class*="markdown"]', /* The actual message content */
+      messageSelector: '[class*="message-container"]',
+      contentSelector: '[class*="markdown"]',
       timestampSelector: '[class*="title_date"]',
-      humanClass: '[class*="question"]', /* Only matches human questions */
-      cleanSelectors: ['.copy-button', '.code-header', '.flex.items-center'] /* Elements to remove */
+      humanClass: '[class*="question"]',
+      cleanSelectors: ['.copy-button', '.code-header', '.flex.items-center'],
     }
+    */
   };
 
   /* Detect current platform */
@@ -38,16 +46,17 @@ javascript: (function () {
   
   if (!platform) {
     const supportedPlatforms = Object.keys(platformConfig).map(c => ' • ' + c).join('\n');
-    alert(`Unsupported platform; currently supported platforms are: ${supportedPlatforms}`);
+    alert(`Unsupported platform; currently supported platforms are:\n${supportedPlatforms}`);
     return;
   }
 
   const config = platformConfig[platform];
-  const humanName = 'Human';
+  /*const humanName = 'Human';*/
   const assistantName = config.name;
-  const titleText = `${assistantName} conversation on ${new Date().toLocaleString()}`;
+  const titleText = titleTextPattern.replace("%s", assistantName);
 
   /* Create a status indicator */
+  /*
   const status = document.createElement('div');
   status.style.fontSize = '16px';
   status.style.fontFamily = 'Courier new, monospace';
@@ -61,7 +70,8 @@ javascript: (function () {
   status.style.zIndex = '9999';
   status.textContent = `Preparing to print ${assistantName} conversation...`;
   document.body.appendChild(status);
-
+  */
+  
   /* Function to clean unwanted elements */
   function cleanElements(node, selectors) {
     selectors.forEach(selector => {
@@ -73,7 +83,7 @@ javascript: (function () {
   /* Function to get a clean, printable version of the conversation */
   function extractConversation() {
     /* Find all message containers */
-    const messageContainers = Array.from(document.querySelectorAll(config.messageContainer || config.messageSelector));
+    const messageContainers = Array.from(document.querySelectorAll(/*config.messageContainer || */config.messageSelector));
     
     /* Create a new document for printing */
     const printDoc = document.createElement('html');
@@ -157,7 +167,7 @@ javascript: (function () {
           margin: 1.5cm;
         }
         body {
-          font-size: 14px;
+          font-size: 16px;
         }
         pre, code {
           print-color-adjust: exact;
@@ -183,6 +193,7 @@ javascript: (function () {
     const messageTimestamps = Array.from(timestampElements).map(el => el.textContent || el.getAttribute('datetime') || '');
     
     /* Process each message container */
+    let contentCloneLast = null;
     messageContainers.forEach((container, index) => {
       const isHuman = container.matches(config.humanClass);
       
@@ -209,9 +220,30 @@ javascript: (function () {
       /* Clean unwanted elements */
       cleanElements(contentClone, config.cleanSelectors || ['button', '[role="button"]']);
       
+      /* Skip duplicated content (this can happen on ChatGPT) */
+      /*console.log("contentClone:", contentClone?.textContent);*/
+      /*console.log("contentCloneLast:", contentCloneLast?.textContent);*/
+      if (contentClone?.textContent === contentCloneLast?.textContent) {
+        /*console.log("EQUAL NODE TEXT CONTENT, SKIPPING");*/
+        return;
+      }
+      /*console.log("NOT EQUAL NODE TEXT CONTENT");*/
+
+      /* Skip empty content */
+      if (!contentClone?.textContent.trim()) return;
+
+      /* Skip JS spurious content */
+      if (contentClone?.textContent.trim().match(/^window\.__oai_logHTML\?/)) {
+        /*console.log("SKIPPING SPURIOUS CONTENT");*/
+        return;
+      }
+      /*console.log("APPENDING TEXT:", contentClone?.textContent);*/
+
       /* Add the cleaned content */
       messageDiv.appendChild(contentClone);
       body.appendChild(messageDiv);
+
+      contentCloneLast = contentClone;
     });
     
     /* Add a link element for the favicon */
@@ -228,22 +260,26 @@ javascript: (function () {
 
   /* Main function to prepare and print */
   function prepareAndPrint() {
-    status.textContent = 'Extracting conversation...';
+    /*status.textContent = 'Extracting conversation...';*/
     
     try {
       /* Create the print document */
       const printDoc = extractConversation();
       
       if (!printDoc) {
-        status.textContent = 'No conversation found.';
+        /*status.textContent = 'No conversation found.';*/
+        alert('No conversation found.');
         return;
       }
       
       /* Open a new window with just the content we want to print */
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
+        /*
         status.textContent = 'Error: Pop-up blocked. Please allow pop-ups and try again.';
         setTimeout(() => status.remove(), 3000);
+        */
+        alert('Print pop-up window blocked. Please allow pop-ups and try again.');
         return;
       }
       
@@ -253,18 +289,42 @@ javascript: (function () {
       /* Set the title for the new window */
       printWindow.document.title = titleText;
       
-      /* Wait a moment to ensure the document is ready */
+      /* Wait a moment before printing */
       setTimeout(() => {
-        status.textContent = 'Printing...';
-        printWindow.focus();
         printWindow.print();
-        
-        status.textContent = 'Print dialog opened!';
-        setTimeout(() => status.remove(), 2000);
-      }, 500);
+
+        /*
+        status.textContent = 'Print dialog opened';
+        setTimeout(() => status.remove(), timeoutBeforeClosePrintWindowMilliseconds * 4);
+        */
+
+        /* Polling mechanism to check when print dialog is closed */
+        const timer = setInterval(() => {
+          if (printWindow.closed) {
+            /*status.textContent = 'Print dialog closed';*/
+            clearInterval(timer);
+          } else {
+            try {
+              /* Attempt to detect if the print dialog has closed */
+              if (printWindow.document.hasFocus()) {
+                  clearInterval(timer);
+                  /*status.textContent = 'Print dialog closed';*/
+                  printWindow.close();
+              }
+            } catch (e) {
+              clearInterval(timer);
+              /*status.textContent = 'Print dialog closed';*/
+              printWindow.close();
+            }
+          }
+        }, timeoutBeforeClosePrintWindowMilliseconds);
+      }, timeoutBeforeClosePrintWindowMilliseconds);
     } catch (err) {
+      /*
       status.textContent = 'Error: ' + err.message;
-      setTimeout(() => status.remove(), 3000);
+      setTimeout(() => status.remove(), timeoutBeforeClosePrintWindowMilliseconds * 6);
+      */
+      alert('Error while printing: ' + err.message);
     }
   }
   

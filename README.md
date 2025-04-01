@@ -11,7 +11,7 @@ When bookmark is clicked when on a supported AI chat, a new window will be creat
 Supported AI chats are:
  - Claude from Anthropic (claude.ai)
  - ChatGPT from OpenAI (chatgpt.com)
+
+Future support will include:
  - Perplexity from perplexity.ai (perplexity.ai)
  - DeepSeek from DeepSeek (chat.deepseek.com)
-
-NOTE: Currently only Claude from Anthropic is tested; other repos support is work in progress.
