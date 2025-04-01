@@ -6,7 +6,7 @@ To use it, you should just make a new bookmark in your preferred browser, give i
 
 If you use Firefox, you can also just do `npm run install-to-firefox`, to install main.js file contents as the url of a bookmark named "AI 🖶" (you have to manually create that bookmark on your browser beforehand).
 
-When bookmark is clicked when on a supported AI chat, a new window will be created, using only the conversation textual parts, and print command will be run.
+When bookmark is clicked when on a supported AI chat, a new window will be created, using only the conversation textual parts, and print command will be run; then new window will be (tentatively) closed.
 
 Supported AI chats are:
  - Claude from Anthropic (claude.ai)
