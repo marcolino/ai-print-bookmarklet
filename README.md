@@ -1,6 +1,6 @@
-# AI Print bookmarklet
+# AI print bookmarklet
 
-This is a bookmarklet that allows <b>printing</b> (to PDF, to paper, ...) an AI chat conversation.
+This is a bookmarklet that allows <i>printing</i> (to PDF, to paper, ...) an AI chat conversation.
 
 To use it, you should just make a new bookmark in your preferred browser, give it a title (like "AI 🖨"), and use the full contents of `main.js` file as the url. The bookmark can be saved in the Bookmarks bar, for it to be easy to reach.
 
