@@ -1,4 +1,4 @@
-# ai-print-bookmarklet
+# AI Print bookmarklet
 
 This is a bookmarklet that allows <b>printing</b> (to PDF, to paper, ...) an AI chat conversation.
 
