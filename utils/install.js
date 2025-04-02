@@ -1,3 +1,9 @@
+/**
+ * Script to install a JavaScript bookmarklet (in a file, by default 'main.js)
+ * to a Firefox bookmark, which should exist
+ * (by default bookmark title should be 'AI 🖶').
+ */
+
 const sqlite3 = require('sqlite3').verbose();
 const { exec } = require('child_process');
 const path = require('path');
@@ -13,7 +19,7 @@ function getFirefoxProfilePath() {
   const possiblePaths = [
     // Traditional Linux path
     path.join(os.homedir(), '.mozilla', 'firefox'),
-    // Snap path
+    // Snap Linux path
     path.join(os.homedir(), 'snap', 'firefox', 'common', '.mozilla', 'firefox'),
     // Windows path
     path.join(os.homedir(), 'AppData', 'Roaming', 'Mozilla', 'Firefox', 'Profiles'),
@@ -32,7 +38,7 @@ function getFirefoxProfilePath() {
       for (const profile of profiles) {
         const dbPath = path.join(basePath, profile, 'places.sqlite');
         if (fs.existsSync(dbPath)) {
-          //console.log('Found Firefox profile at:', dbPath);
+          // Firefox profile found
           return dbPath;
         }
       }
@@ -50,7 +56,6 @@ function killFirefox() {
     } else {
       exec('( pkill -f firefox || killall firefox ) >/dev/null 2>&1');
     }
-    //console.log('Firefox terminated.');
   } catch (err) {
     console.error('Error killing Firefox:', err);
   }
@@ -66,7 +71,6 @@ async function restartFirefox() {
     } else {
       await exec('firefox');
     }
-    //console.log('Firefox restarted.');
   } catch (err) {
     console.error('Error restarting Firefox:', err);
   }
