@@ -1,6 +1,5 @@
 javascript: (function () {
-
-  /* Setup gllobal variables */
+  /* Setup global variables */
   const humanName = 'Human';
   const titleTextPattern = `%s conversation on %s}`;
   const timeoutBeforeClosePrintWindowMilliseconds = 100;
@@ -11,36 +10,15 @@ javascript: (function () {
       name: 'Claude',
       messageSelector: '[class*="message"], [role="dialog"], .message',
       timestampSelector: '[class*="timestamp"], time, [datetime]',
-      humanClass: 'human-message, .user-message, [class*="human"], [class*="user"]',
-      /*cleanSelectors: ['button', '.copy-btn']*/
+      humanClass: 'human-message, .user-message, [class*="human"], [class*="user"]'
     },
     'chatgpt.com': {
       name: 'ChatGPT',
       messageSelector: '.text-base',
       timestampSelector: '[class*="timestamp"], time, [datetime]',
       humanClass: '.text-base:has(.whitespace-pre-wrap)',
-      assistantClass: '.text-base:has(.prose)',
-      /*cleanSelectors: ['button', '.copy-code-button']*/
-    },
-    /*
-    'www.perplexity.ai': {
-      name: 'Perplexity',
-      messageSelector: 'div[data-testid="assistant-message"]',
-      timestampSelector: 'div[data-testid="thread-timestamp"]',
-      humanClass: 'div[data-testid="user-message"]',
-      cleanSelectors: ['button', '.copy-button']
-    },
-    */
-    /*
-    'chat.deepseek.com': {
-      name: 'DeepSeek',
-      messageSelector: '[class*="message-container"]',
-      contentSelector: '[class*="markdown"]',
-      timestampSelector: '[class*="title_date"]',
-      humanClass: '[class*="question"]',
-      cleanSelectors: ['.copy-button', '.code-header', '.flex.items-center'],
+      assistantClass: '.text-base:has(.prose)'
     }
-    */
   };
 
   /* Detect current platform */
@@ -65,12 +43,47 @@ javascript: (function () {
     return node;
   }
 
-  /* Function to get a clean, printable version of the conversation */
-  function extractConversation() {
-    /* Find all message containers */
-    const messageContainers = Array.from(document.querySelectorAll(config.messageSelector));
+  /* Improved function to get all selected messages */
+  function getSelectedMessages() {
+    const selection = window.getSelection();
+    if (!selection || selection.toString().trim() === '' || selection.rangeCount === 0) return null;
     
-    /* Create a new document for printing */
+    /* Get all message containers in the document */
+    const allMessages = Array.from(document.querySelectorAll(config.messageSelector));
+    const selectedMessages = new Set();
+    
+    /* Check each range in the selection */
+    for (let i = 0; i < selection.rangeCount; i++) {
+      const range = selection.getRangeAt(i);
+      
+      /* Create a TreeWalker to find all message nodes in the range */
+      const treeWalker = document.createTreeWalker(
+        range.commonAncestorContainer,
+        NodeFilter.SHOW_ELEMENT,
+        {
+          acceptNode: function(node) {
+            return node.matches(config.messageSelector) ? 
+              NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+          }
+        },
+        false
+      );
+      
+      /* Find the start node */
+      let node = treeWalker.currentNode;
+      while (node) {
+        if (range.intersectsNode(node)) {
+          selectedMessages.add(node);
+        }
+        node = treeWalker.nextNode();
+      }
+    }
+    
+    return selectedMessages.size > 0 ? Array.from(selectedMessages) : null;
+  }
+
+  /* Function to create print document */
+  function createPrintDocument(contentNodes) {
     const printDoc = document.createElement('html');
     const head = document.createElement('head');
     const style = document.createElement('style');
@@ -90,24 +103,11 @@ javascript: (function () {
         padding-bottom: 15px;
         border-bottom: 1px solid #eee;
       }
-      .timestamp {
-        color: #666;
-        font-size: 14px;
-        margin-top: 5px;
-      }
       .message {
         margin-bottom: 25px;
         padding: 15px;
         border-radius: 8px;
         page-break-inside: avoid;
-        position: relative;
-      }
-      .message-timestamp {
-        position: absolute;
-        top: 5px;
-        right: 10px;
-        font-size: 12px;
-        color: #666;
       }
       .human {
         background-color: #f5f7fa;
@@ -117,7 +117,6 @@ javascript: (function () {
         background-color: #f9f9f9;
         border-left: 4px solid #50b97d;
       }
-      /* Fixed code block styling */
       pre {
         white-space: pre-wrap;
         background-color: #f8f9fa;
@@ -126,26 +125,6 @@ javascript: (function () {
         border-radius: 6px;
         font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
         font-size: 14px;
-        line-height: 1.4;
-        max-width: 100%;
-        overflow-wrap: break-word;
-        word-wrap: break-word;
-        display: block;
-        margin: 15px 0;
-        page-break-inside: avoid;
-      }
-      code {
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-        font-size: 14px;
-        background-color: rgba(0,0,0,0.05);
-        padding: 2px 4px;
-        border-radius: 3px;
-      }
-      /* Make sure code inside pre doesn't get double-styled */
-      pre code {
-        background-color: transparent;
-        padding: -4px;
-        border-radius: 0;
       }
       @media print {
         @page {
@@ -154,83 +133,32 @@ javascript: (function () {
         body {
           font-size: 16px;
         }
-        pre, code {
-          print-color-adjust: exact;
-          -webkit-print-color-adjust: exact;
-        }
       }
     `;
     head.appendChild(style);
     const body = document.createElement('body');
     
+    /* Add header */
+    const header = document.createElement('div');
+    header.className = 'header';
+    const title = document.createElement('h3');
+    
     /* Try to find timestamp in the original messages */
     const timestampElements = document.querySelectorAll(config.timestampSelector);
     const messageTimestamp = Array.from(timestampElements).map(el => el.textContent || el.getAttribute('datetime') || '')[0];
     titleText = titleTextPattern.replace("%s", assistantName).replace("%s", messageTimestamp ?? new Date().toLocaleString());
-
-    /* Add header with current date/time */
-    const header = document.createElement('div');
-    header.className = 'header';
     
-    const title = document.createElement('h3');
     title.textContent = titleText;
     header.appendChild(title);
-    
     body.appendChild(header);
 
-    /* Process each message container */
-    let contentCloneLast = null;
-    messageContainers.forEach((container, index) => {
-      const isHuman = container.matches(config.humanClass);
-      const isAssistant = config.assistantClass ? container.matches(config.assistantClass) : true;
-      
-      if (!isHuman && !isAssistant) { /* Skip if not human or assistant */
-        return;
-      }
-      
-      /* Find the actual content within the container */
-      const content = config.contentSelector 
-        ? container.querySelector(config.contentSelector)
-        : container;
-      
-      if (!content) { /* Skip if no content found */
-        return;
-      }
-
-      /* Create a message div */
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${isHuman ? 'human' : 'assistant'}`;
-      
-      /* Add a label */
-      const label = document.createElement('div');
-      label.style.fontWeight = 'bold';
-      label.style.marginBottom = '10px';
-      label.textContent = (isHuman ? humanName : assistantName) + ':';
-      messageDiv.appendChild(label);
-      
-      /* Clone the content */
-      const contentClone = content.cloneNode(true);
-      
-      /* Clean unwanted elements */
-      cleanElements(contentClone, config.cleanSelectors || ['button', '[role="button"]']);
-      
-      /* Skip duplicated content (this can happen on ChatGPT) */
-      if (contentClone?.textContent === contentCloneLast?.textContent) {
-        return;
-      }
-
-      /* Add the cleaned content */
-      messageDiv.appendChild(contentClone);
-      body.appendChild(messageDiv);
-
-      contentCloneLast = contentClone;
-    });
+    /* Add the content nodes */
+    contentNodes.forEach(node => body.appendChild(node));
     
-    /* Add a link element for the favicon */
+    /* Add favicon */
     const favicon = document.createElement('link');
     favicon.rel = 'icon';
     favicon.href = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTI0IDQ0QzM1LjA0NTcgNDQgNDQgMzUuMDQ1NyA0NCAyNEM0NCAxMi45NTQzIDM1LjA0NTcgNCAyNCA0QzEyLjk1NDMgNCA0IDEyLjk1NDMgNCAyNEM0IDM1LjA0NTcgMTIuOTU0MyA0NCAyNCA0NFoiIGZpbGw9IiMxNjQxNzYiLz48cGF0aCBkPSJNMzIgMjQuNUMyOSAyOS41IDI0IDMyIDI0IDMyQzI0IDMyIDE5IDI5LjUgMTYgMjQuNUMxMyAxOS41IDE2IDEzIDI0IDEzQzMyIDEzIDM1IDE5LjUgMzIgMjQuNVoiIGZpbGw9IndoaXRlIi8+PC9zdmc+';
-    favicon.type = 'image/svg+xml';
     head.appendChild(favicon);
     
     printDoc.appendChild(head);
@@ -238,16 +166,100 @@ javascript: (function () {
     return printDoc;
   }
 
+  /* Function to prepare content for printing */
+  function prepareContent() {
+    /* First check for selected messages */
+    const selectedMessages = getSelectedMessages();
+    if (selectedMessages) {
+      /* Sort messages by their position in the DOM to maintain original order */
+      const sortedMessages = selectedMessages.sort((a, b) => {
+        return Array.from(document.querySelectorAll(config.messageSelector)).indexOf(a) - 
+               Array.from(document.querySelectorAll(config.messageSelector)).indexOf(b);
+      });
+      
+      const contentNodes = [];
+      
+      sortedMessages.forEach(message => {
+        const isHuman = message.matches(config.humanClass);
+        const isAssistant = config.assistantClass ? message.matches(config.assistantClass) : !isHuman;
+        
+        if (!isHuman && !isAssistant) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isHuman ? 'human' : 'assistant'}`;
+        
+        const label = document.createElement('div');
+        label.style.fontWeight = 'bold';
+        label.style.marginBottom = '10px';
+        label.textContent = (isHuman ? humanName : assistantName) + ':';
+        messageDiv.appendChild(label);
+        
+        const content = config.contentSelector 
+          ? message.querySelector(config.contentSelector)
+          : message;
+        
+        if (content) {
+          const contentClone = content.cloneNode(true);
+          cleanElements(contentClone, config.cleanSelectors || ['button', '[role="button"]']);
+          messageDiv.appendChild(contentClone);
+          contentNodes.push(messageDiv);
+        }
+      });
+      
+      return contentNodes;
+    }
+    
+    /* Fall back to full conversation */
+    const messageContainers = Array.from(document.querySelectorAll(config.messageSelector));
+    const contentNodes = [];
+    let contentCloneLast = null;
+    
+    messageContainers.forEach(container => {
+      const isHuman = container.matches(config.humanClass);
+      const isAssistant = config.assistantClass ? container.matches(config.assistantClass) : true;
+      
+      if (!isHuman && !isAssistant) return;
+      
+      const content = config.contentSelector 
+        ? container.querySelector(config.contentSelector)
+        : container;
+      
+      if (!content) return;
+      
+      const contentClone = content.cloneNode(true);
+      cleanElements(contentClone, config.cleanSelectors || ['button', '[role="button"]']);
+      
+      if (contentClone?.textContent === contentCloneLast?.textContent) return;
+      if (!contentClone?.textContent.trim()) return;
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${isHuman ? 'human' : 'assistant'}`;
+      
+      const label = document.createElement('div');
+      label.style.fontWeight = 'bold';
+      label.style.marginBottom = '10px';
+      label.textContent = (isHuman ? humanName : assistantName) + ':';
+      messageDiv.appendChild(label);
+      
+      messageDiv.appendChild(contentClone);
+      contentNodes.push(messageDiv);
+      contentCloneLast = contentClone;
+    });
+    
+    return contentNodes;
+  }
+
   /* Main function to prepare and print */
   function prepareAndPrint() {
     try {
-      /* Create the print document */
-      const printDoc = extractConversation();
+      const contentNodes = prepareContent();
       
-      if (!printDoc) {
-        alert('No conversation found.');
+      if (!contentNodes || contentNodes.length === 0) {
+        alert('No content found to print.');
         return;
       }
+      
+      const printDoc = createPrintDocument(contentNodes);
       
       /* Open a new window with just the content we want to print */
       const printWindow = window.open('', '_blank');
@@ -258,8 +270,6 @@ javascript: (function () {
       
       printWindow.document.write(printDoc.outerHTML);
       printWindow.document.close();
-      
-      /* Set the title for the new window */
       printWindow.document.title = titleText;
       
       /* Wait a moment before printing */
@@ -272,7 +282,6 @@ javascript: (function () {
             clearInterval(timer);
           } else {
             try {
-              /* Attempt to detect if the print dialog has closed */
               if (printWindow.document.hasFocus()) {
                   clearInterval(timer);
                   printWindow.close();
