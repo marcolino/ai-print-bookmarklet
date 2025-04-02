@@ -49,7 +49,7 @@ javascript: (function () {
   
   if (!platform) {
     const supportedPlatforms = Object.keys(platformConfig).map(c => ' • ' + c).join('\n');
-    alert(`Unsupported platform; currently supported platforms are:\n${supportedPlatforms}`);
+    alert(`Unsupported site; currently supported sites are:\n${supportedPlatforms}`);
     return;
   }
 
