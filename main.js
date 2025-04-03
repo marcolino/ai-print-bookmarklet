@@ -1,6 +1,5 @@
 javascript: (function () {
-
-  /* Setup gllobal variables */
+  /* Setup global variables */
   const humanName = 'Human';
   const titleTextPattern = `%s conversation on %s}`;
   const timeoutBeforeClosePrintWindowMilliseconds = 100;
@@ -10,37 +9,36 @@ javascript: (function () {
     'claude.ai': {
       name: 'Claude',
       messageSelector: '[class*="message"], [role="dialog"], .message',
-      timestampSelector: '[class*="timestamp"], time, [datetime]',
       humanClass: 'human-message, .user-message, [class*="human"], [class*="user"]',
+      /*timestampSelector: '[class*="timestamp"], time, [datetime]',*/
       /*cleanSelectors: ['button', '.copy-btn']*/
     },
     'chatgpt.com': {
       name: 'ChatGPT',
       messageSelector: '.text-base',
-      timestampSelector: '[class*="timestamp"], time, [datetime]',
       humanClass: '.text-base:has(.whitespace-pre-wrap)',
       assistantClass: '.text-base:has(.prose)',
+      /*timestampSelector: '[class*="timestamp"], time, [datetime]',*/
       /*cleanSelectors: ['button', '.copy-code-button']*/
     },
     /*
-    'www.perplexity.ai': {
+     'www.perplexity.ai': {
       name: 'Perplexity',
-      messageSelector: 'div[data-testid="assistant-message"]',
-      timestampSelector: 'div[data-testid="thread-timestamp"]',
+      messageSelector: 'div[data-testid="thread-container"]',
       humanClass: 'div[data-testid="user-message"]',
-      cleanSelectors: ['button', '.copy-button']
-    },
+      assistantClass: 'div[data-testid="ai-message"]',
+      /*timestampSelector: '[class*="timestamp"]',* /
+      /*cleanSelectors: ['button', '.copy-button']* /
+      },
     */
-    /*
     'chat.deepseek.com': {
       name: 'DeepSeek',
-      messageSelector: '[class*="message-container"]',
-      contentSelector: '[class*="markdown"]',
-      timestampSelector: '[class*="title_date"]',
-      humanClass: '[class*="question"]',
-      cleanSelectors: ['.copy-button', '.code-header', '.flex.items-center'],
+      messageSelector: '[class*="messages-container"]',
+      humanClass: '[class*="messages-container"] [class*="human-message"]',
+      assistantClass: '[class*="messages-container"] [class*="bot-message"]',
+      /*timestampSelector: '[class*="title_date"]',*/
+      /*cleanSelectors: ['.copy-button', '.code-header', '.flex.items-center'],*/
     }
-    */
   };
 
   /* Detect current platform */
@@ -129,7 +127,7 @@ javascript: (function () {
         line-height: 1.4;
         max-width: 100%;
         overflow-wrap: break-word;
-        word-wrap: break-word;
+         word-wrap: break-word;
         display: block;
         margin: 15px 0;
         page-break-inside: avoid;
@@ -181,6 +179,7 @@ javascript: (function () {
     /* Process each message container */
     let contentCloneLast = null;
     messageContainers.forEach((container, index) => {
+      /*console.log("CONTAINER:", container);*/
       const isHuman = container.matches(config.humanClass);
       const isAssistant = config.assistantClass ? container.matches(config.assistantClass) : true;
       
