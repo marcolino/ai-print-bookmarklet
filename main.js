@@ -1,7 +1,7 @@
 javascript: (function () {
   /* Setup global variables */
   const humanName = 'Human';
-  const titleTextPattern = `%s conversation on %s}`;
+  const titleTextPattern = `%s conversation on %s`;
   const timeoutBeforeClosePrintWindowMilliseconds = 100;
 
   /* Configuration for different AI platforms */
@@ -31,14 +31,16 @@ javascript: (function () {
       /*cleanSelectors: ['button', '.copy-button']* /
       },
     */
+    /*
     'chat.deepseek.com': {
       name: 'DeepSeek',
-      messageSelector: '[class*="messages-container"]',
-      humanClass: '[class*="messages-container"] [class*="human-message"]',
-      assistantClass: '[class*="messages-container"] [class*="bot-message"]',
-      /*timestampSelector: '[class*="title_date"]',*/
-      /*cleanSelectors: ['.copy-button', '.code-header', '.flex.items-center'],*/
+      messageSelector: '[class*="fbb737a4"]',
+      humanClass: '[class*="_9663006"]',
+      assistantClass: '[class*="ds-markdown.ds-markdown--block"]',
+      /*timestampSelector: '[class*="title_date"]',* /
+      /*cleanSelectors: ['.copy-button', '.code-header', '.flex.items-center'],* /
     }
+    */
   };
 
   /* Detect current platform */
@@ -108,10 +110,12 @@ javascript: (function () {
         color: #666;
       }
       .human {
+        margin-top: 10px;
         background-color: #f5f7fa;
         border-left: 4px solid #4a90e2;
       }
       .assistant {
+        margin-top: 10px;
         background-color: #f9f9f9;
         border-left: 4px solid #50b97d;
       }
@@ -150,7 +154,8 @@ javascript: (function () {
           margin: 1.5cm;
         }
         body {
-          font-size: 16px;
+          font-size: 20px;
+          line-height: 2;
         }
         pre, code {
           print-color-adjust: exact;
