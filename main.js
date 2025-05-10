@@ -161,6 +161,10 @@ javascript: (function () {
           print-color-adjust: exact;
           -webkit-print-color-adjust: exact;
         }
+        /* Avoid printing math formulas twice */
+        .katex .katex-html {
+          display: none !important;
+        }
       }
     `;
     head.appendChild(style);
